@@ -1,8 +1,12 @@
 # Publica la app en GitHub Pages en cada push a main.
 #
-# Enciende Pages por su cuenta (enablement: true), así no depende de que
-# alguien acierte con la pantalla de Settings. Y cada publicación queda con su
-# registro en la pestaña Actions, que es donde se mira cuando algo no sale.
+# Cada publicación queda con su registro en la pestaña Actions, que es donde
+# se mira cuando algo no sale. Antes no había dónde mirar.
+#
+# Pages se activa UNA VEZ a mano, en Settings → Pages → Source: GitHub Actions.
+# Este flujo intentó encenderlo solo (enablement: true) y GitHub se lo negó:
+# "Resource not accessible by integration". Por defecto el token de un flujo
+# es de solo lectura, y crear un sitio de Pages es escritura.
 
 name: Publicar
 
@@ -31,8 +35,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       # La app son archivos estáticos: se sube el repo tal cual, sin compilar.
       - uses: actions/upload-pages-artifact@v3
