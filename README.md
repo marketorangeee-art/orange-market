@@ -96,6 +96,16 @@ cuando alguien vuelva a entrar ahí.
 git add -A && git commit -m "..." && git push origin main
 ```
 
+El push dispara el flujo `.github/workflows/pages.yml`, que publica en
+**https://marketorangeee-art.github.io/orange-market/**. Cada publicación deja
+su registro en la pestaña **Actions**: ahí se mira cuando algo no sale.
+
+Pages se activa **una sola vez**, a mano, en *Settings → Pages → Source:
+GitHub Actions*. El flujo intentó encenderlo solo y GitHub se lo negó con
+`Resource not accessible by integration`: por defecto el token de un flujo es
+de solo lectura, y crear un sitio de Pages es escritura. En un repositorio
+nuevo, hay que acordarse de ese clic.
+
 Y **en cada cambio de JS, CSS o imágenes**, las dos cosas:
 
 1. Subir `VERSION` en `js/ui.js`
