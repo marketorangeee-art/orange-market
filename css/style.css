@@ -1,7 +1,8 @@
 /* Orange Market · tema
  *
- * Colores tomados del logo: el azul del fondo es #04244a y el cian del trazo
- * es #14d6e3.
+ * Colores tomados del logo: el azul del fondo es #1a2b56 y el verde-azul del
+ * trazo es #08bebf. Si el logo cambia, estos dos cambian con él y el resto de
+ * la paleta se deriva de ahí.
  *
  * Una sola hoja para celular y PC. Hasta 899px manda el pulgar: una columna y
  * barra de pestañas abajo. Desde 900px hay barra lateral y el contenido se
@@ -9,14 +10,14 @@
  */
 
 :root {
-  --fondo:      #04244a;
-  --fondo-2:    #072e5c;
-  --fondo-3:    #0b3b74;
-  --linea:      rgba(20, 214, 227, .18);
-  --marca:      #14d6e3;
-  --marca-tenue: rgba(20, 214, 227, .12);
-  --texto:      #e8f6ff;
-  --texto-2:    #8fb3d4;
+  --fondo:      #1a2b56;
+  --fondo-2:    #22376a;
+  --fondo-3:    #2c4383;
+  --linea:      rgba(8, 190, 191, .20);
+  --marca:      #08bebf;
+  --marca-tenue: rgba(8, 190, 191, .14);
+  --texto:      #e8f4f8;
+  --texto-2:    #93aacb;
   --ok:         #3ddc97;
   --alerta:     #ffb53d;
   --mal:        #ff6b6b;
@@ -183,7 +184,7 @@ body {
   border: 0;
   border-radius: var(--radio);
   background: var(--marca);
-  color: #04203f;
+  color: #10204a;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -357,7 +358,7 @@ body {
   bottom: calc(80px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   background: var(--marca);
-  color: #04203f;
+  color: #10204a;
   font-weight: 600;
   padding: 11px 20px;
   border-radius: 999px;
