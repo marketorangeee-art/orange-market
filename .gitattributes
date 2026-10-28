@@ -1,0 +1,8 @@
+# Finales de línea iguales en todas partes. Sin esto, Windows convierte a CRLF
+# al sacar los archivos y un día aparece "cambió todo" en un diff donde nadie
+# tocó nada.
+* text=auto eol=lf
+
+*.png  -text
+*.jpg  -text
+*.pdf  -text
