@@ -15,7 +15,9 @@
 
   // Versión exacta y fija: una actualización del SDK no puede romper la app
   // de un día para otro sin que nadie la haya tocado.
-  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+  // Desde la 2.49 entiende las claves publicables (sb_publishable_…), que son
+  // las que entrega Supabase en los proyectos nuevos.
+  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
 
   const MARCA_CERO = '1970-01-01T00:00:00Z';
   const CADA = 20000;
