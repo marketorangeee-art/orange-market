@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orange Market</title>
+
+<meta name="theme-color" content="#04244a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orange Market">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" href="assets/icono-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="cabecera">
+    <img class="cabecera__logo" src="assets/logo.png" alt="Orange Market">
+    <div class="cabecera__derecha" id="cabecera-derecha"></div>
+  </header>
+
+  <main class="contenido" id="contenido"></main>
+
+  <nav class="nav" id="nav"></nav>
+</div>
+
+<script src="js/store.js"></script>
+<script src="js/config.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/p-inventario.js"></script>
+<script src="js/p-proveedores.js"></script>
+<script src="js/p-clientes.js"></script>
+<script src="js/p-venta.js"></script>
+<script src="js/p-resumen.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    OM.cloud.iniciar();
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('sw.js');
+    }
+  });
+</script>
+
+</body>
+</html>
