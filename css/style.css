@@ -195,7 +195,10 @@ body {
 .boton--fantasma { background: transparent; color: var(--marca); border: 1px solid var(--linea); }
 .boton--peligro { background: transparent; color: var(--mal); border: 1px solid rgba(255,107,107,.3); }
 
-.campo { margin-bottom: 14px; }
+/* display:block no es decorativo: .campo es un <label>, y a un elemento en
+   línea los márgenes verticales no le aplican. Sin esto, el margen de abajo
+   se ignora y los campos quedan pegados entre sí en todos los formularios. */
+.campo { display: block; margin-bottom: 14px; }
 
 .campo__etiqueta {
   display: block;
@@ -453,3 +456,8 @@ body {
   display: block;
   margin: 0 auto 32px;
 }
+
+/* El botón que envía no puede quedar pegado al último campo: separarlo deja
+   claro que es la acción y no un campo más, y da margen para no tocarlo sin
+   querer con el pulgar al salir del teclado. */
+.entrada__entrar { margin-top: 12px; }

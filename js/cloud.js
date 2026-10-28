@@ -126,7 +126,7 @@
             <input type="password" name="clave" autocomplete="current-password" required>
           </label>
           <div class="mal" id="error" hidden style="margin-bottom:12px"></div>
-          <button class="boton boton--bloque" type="submit">Entrar</button>
+          <button class="boton boton--bloque entrada__entrar" type="submit">Entrar</button>
         </form>
       </div>`;
 
