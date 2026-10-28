@@ -108,6 +108,11 @@ de conexión de la cabecera.
 El service worker pide el código propio **a la red primero**, con el caché como
 respaldo, para que una corrección llegue en la primera apertura.
 
+Pide con `cache: 'no-cache'`, que obliga a revalidar contra el servidor. Sin
+eso, `fetch()` usa la caché HTTP del navegador por debajo y puede devolver una
+copia vieja sin que el service worker se entere — y "a la red primero" deja de
+garantizar nada. Ya pasó una vez, con un cambio de CSS que no llegaba.
+
 ---
 
 ## 5. Instalar

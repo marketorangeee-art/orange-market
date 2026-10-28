@@ -88,7 +88,7 @@
   }
 
   function arrancarApp() {
-    document.getElementById('nav').style.display = '';
+    document.getElementById('app').classList.remove('app--entrada');
     OM.ui.arrancar();
     pintarEstado();
   }
@@ -101,12 +101,11 @@
   /* ── login ────────────────────────────────────────────────────────── */
 
   function pantallaLogin(sinSenal) {
-    document.getElementById('nav').style.display = 'none';
+    document.getElementById('app').classList.add('app--entrada');
     const cont = document.getElementById('contenido');
     cont.innerHTML = `
-      <div style="max-width:380px;margin:8vh auto 0">
-        <img src="assets/logo.png" alt="Orange Market"
-             style="width:100%;max-width:260px;display:block;margin:0 auto 28px">
+      <div class="entrada">
+        <img class="entrada__logo" src="assets/logo.png" alt="Orange Market">
 
         ${sinSenal ? `
           <div class="tarjeta" style="border-color:rgba(255,181,61,.4)">

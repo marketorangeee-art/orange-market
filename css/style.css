@@ -418,3 +418,38 @@ body {
   .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
   .rejilla .tarjeta { margin-bottom: 0; }
 }
+
+/* ── pantalla de entrada ─────────────────────────────────────────────────
+ *
+ * Va al final del archivo a propósito: tiene que ganarle a la rejilla de
+ * escritorio de arriba, y con la misma especificidad gana la última regla.
+ *
+ * Esconder la navegación no basta: su columna de 232px sigue ocupando lugar
+ * y empuja el contenido a la derecha. Acá el formulario es lo único en
+ * pantalla, así que la cuadrícula se reduce a una sola celda.
+ */
+.app--entrada {
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas: "contenido";
+}
+
+.app--entrada .cabecera,
+.app--entrada .nav { display: none; }
+
+.app--entrada .contenido {
+  grid-area: contenido;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.entrada { width: 100%; max-width: 360px; }
+
+.entrada__logo {
+  width: 100%;
+  max-width: 250px;
+  display: block;
+  margin: 0 auto 32px;
+}

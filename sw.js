@@ -6,7 +6,7 @@
  *
  * ⚠ Subir CACHE en cada cambio de JS o CSS, junto con OM.ui.VERSION.
  */
-var CACHE = 'orange-v7';
+var CACHE = 'orange-v9';
 
 var BASE = [
   './',
@@ -54,8 +54,13 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== location.origin) return;   // Supabase nunca se cachea
 
+  // cache: 'no-cache' obliga a revalidar contra el servidor. Sin esto, fetch()
+  // usa la cache HTTP del navegador por debajo y puede devolver una copia
+  // vieja sin que el service worker se entere: pedir "a la red primero" deja
+  // de garantizar nada. Con revalidacion el servidor responde 304 si no
+  // cambio, asi que no cuesta ancho de banda.
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(function (res) {
         var copia = res.clone();
         caches.open(CACHE).then(function (c) { c.put(req, copia); });
