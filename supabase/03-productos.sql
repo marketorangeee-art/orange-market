@@ -155,6 +155,135 @@ where not exists (
   where lower(p.nombre) = lower(v.nombre) and not p.deleted
 );
 
+
+-- ═══════════════════════════════════════════════ 3. corregir unidades
+--
+-- El insert de arriba solo agrega los que faltan: a un producto que ya existe
+-- no lo toca. Si una version anterior de este archivo los cargó con otra
+-- unidad, quedarían mal para siempre y en silencio. Esto los pone al día.
+--
+-- Solo toca los que están en la lista y tienen la unidad distinta. Un producto
+-- creado a mano, o uno al que se le cambió la unidad a propósito y no está en
+-- la lista, se queda como está.
+
+update public.productos p
+set unidad = v.unidad
+from (values
+  ('Filete de salmon Premium', 'kilo_neto'),
+  ('Filete de atún maguro', 'kilo_neto'),
+  ('Filete de atún nacional', 'kilo_neto'),
+  ('Filete de corvina', 'kilo_neto'),
+  ('Filete de robalo nacional', 'unidad'),
+  ('Filete de merluza', 'kilo_neto'),
+  ('Filete de mero', 'kilo_neto'),
+  ('Filete de cherna', 'kilo_neto'),
+  ('Filete de berrugate', 'kilo_neto'),
+  ('Filete de tilapia', 'kilo_neto'),
+  ('Filete de pargo', 'kilo_neto'),
+  ('Filete de bravo', 'kilo_neto'),
+  ('Filete de dorado', 'kilo_neto'),
+  ('Filete de merluzilla', 'kilo_neto'),
+  ('Filete de chernilla', 'kilo_neto'),
+  ('Filete de basa', 'kilo_neto'),
+  ('Camaron tigre', 'kilo_neto'),
+  ('Camaron jumbo', 'kilo_neto'),
+  ('Camaron crudo 41/50', 'kilo_neto'),
+  ('Camaron crudo 36/40', 'kilo_neto'),
+  ('Camaron de cultivo U15', 'kilo_neto'),
+  ('Camaron de cultivo clasificado', 'kilo_neto'),
+  ('Camaron de cultivo CL 70-99gr', 'kilo_neto'),
+  ('Camaron de cultivo CL 100-139gr', 'kilo_neto'),
+  ('Camaron de cultivo CL 140-up', 'kilo_neto'),
+  ('Cola de langosta pequeña', 'kilo_neto'),
+  ('Cola de langosta mediana', 'kilo_neto'),
+  ('Cola de langosta grande', 'kilo_neto'),
+  ('Langosta entera grande', 'kilo_neto'),
+  ('Langosta entera pequeña', 'kilo_neto'),
+  ('Carne de langosta', 'kilo_neto'),
+  ('Carne de camaron', 'kilo_neto'),
+  ('Atun entero', 'kilo_neto'),
+  ('Tilapia libra', 'kilo_neto'),
+  ('Tilapia 2xl', 'kilo_neto'),
+  ('Tilapia 3xk', 'kilo_neto'),
+  ('Trucha mariposa', 'kilo_neto'),
+  ('Sierra', 'kilo_neto'),
+  ('Sierrilla', 'kilo_neto'),
+  ('Pargo platero', 'kilo_neto'),
+  ('Pargo 3/4', 'kilo_neto'),
+  ('Pargo mediano', 'kilo_neto'),
+  ('Lenguado', 'kilo_neto'),
+  ('Picuda', 'kilo_neto'),
+  ('Pelada', 'kilo_neto'),
+  ('Jurel', 'kilo_neto'),
+  ('Burique', 'kilo_neto'),
+  ('Lebranche', 'kilo_neto'),
+  ('Robalo platero', 'kilo_neto'),
+  ('Corvina platera', 'kilo_neto'),
+  ('Anillos de calamar', 'kilo_neto'),
+  ('Tubos de calamar', 'kilo_neto'),
+  ('Calamar blanco (pota)', 'kilo_neto'),
+  ('Calamar morado (rejo)', 'kilo_neto'),
+  ('Gambas', 'kilo_neto'),
+  ('Mixtura de mariscos Premium', 'unidad'),
+  ('Mixtura de mariscos', 'unidad'),
+  ('Pulpo mexicano', 'kilo_neto'),
+  ('Pulpo baby', 'kilo_neto'),
+  ('Pulpo nacional', 'kilo_neto'),
+  ('Mejillones negros', 'unidad'),
+  ('Mejillones verdes', 'unidad'),
+  ('Palmito kanikama', 'unidad'),
+  ('Palmitos', 'unidad'),
+  ('Carne de jaiba Premium', 'kilo_neto'),
+  ('Muelas de jaiba', 'kilo_neto'),
+  ('Muelas de cangrejo', 'kilo_neto'),
+  ('Almeja limpia', 'kilo_neto'),
+  ('Almeja negra', 'kilo_neto'),
+  ('Almeja blanca', 'kilo_neto'),
+  ('Scallops', 'kilo_neto'),
+  ('Vieiras', 'unidad'),
+  ('Bagre rayado', 'kilo_neto'),
+  ('Bagre CBZ', 'kilo_neto'),
+  ('Bocon pintado', 'kilo_neto'),
+  ('Dorado', 'kilo_neto'),
+  ('Amarillo', 'kilo_neto'),
+  ('Cajaro', 'kilo_neto'),
+  ('Bocachico', 'kilo_neto'),
+  ('Valenton', 'kilo_neto'),
+  ('Pirabuton', 'kilo_neto'),
+  ('Baboso', 'kilo_neto'),
+  ('Pluma', 'kilo_neto'),
+  ('Yaque', 'kilo_neto'),
+  ('Caracol', 'kilo_neto'),
+  ('Salpicon de toyo', 'kilo_neto'),
+  ('Pulpa', 'kilo_neto'),
+  ('Cascara de camaron', 'kilo_neto'),
+  ('Muela de camaron cultivo', 'kilo'),
+  ('Producto congelado', 'unidad'),
+  ('Fideo de frijol', 'unidad'),
+  ('Carne de camarón (cabeza)', 'kilo_neto'),
+  ('Azafran', 'unidad'),
+  ('PANKO', 'unidad'),
+  ('Piel de wanton', 'unidad'),
+  ('Piel de gyosas', 'unidad'),
+  ('Trozo de Salmón Premium', 'kilo_neto'),
+  ('Lomo de atún', 'kilo_neto'),
+  ('Muelas King Crab', 'kilo_neto'),
+  ('Filete de Salmon premium porcionado', 'kilo_neto'),
+  ('Mejillones negros x 500 gr', 'unidad'),
+  ('Cascara de langosta', 'kilo_neto'),
+  ('Langostino U10', 'kilo_neto'),
+  ('Langostino U12', 'kilo_neto'),
+  ('Langostino U15', 'kilo_neto'),
+  ('Langostino 16/20', 'kilo_neto'),
+  ('Langostino Tigre', 'kilo_neto'),
+  ('Langostino cascara bloque', 'kilo_neto'),
+  ('Carne de langosta (cabeza)', 'kilo_neto')
+) as v(nombre, unidad)
+where lower(p.nombre) = lower(v.nombre)
+  and p.unidad <> v.unidad
+  and not p.deleted;
+
+
 -- Cuántos quedaron, para verificar de un vistazo.
 select unidad, count(*) as productos
 from public.productos
