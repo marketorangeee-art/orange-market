@@ -193,7 +193,7 @@
                     hay <span id="disp-${i}-${l.id}">${fmt.cant(libre, p.unidad)}</span>
                   </div>
                 </div>
-                <input type="number" inputmode="decimal" step="0.01" min="0"
+                <input type="text" inputmode="decimal"
                        class="lote__cant" data-linea="${i}" data-lote="${l.id}"
                        value="${puesto ? puesto.cantidad : 0}">
               </div>`;
@@ -208,7 +208,7 @@
               ${opciones.editarPrecio ? `
                 <label class="campo" style="margin:12px 0 6px">
                   <span class="campo__etiqueta">Precio de venta por ${fmt.unidad(p.unidad)}</span>
-                  <input type="number" inputmode="numeric" step="1" min="0"
+                  <input type="text" inputmode="numeric"
                          class="precio" data-linea="${i}" value="${linea.precio_unit}">
                 </label>`
                 : `<div class="tenue" style="margin:4px 0 12px">
@@ -278,7 +278,7 @@
             const lote = store.lotes().find(l => l.id === lote_id);
             const tope = store.kg(lote.restante - tomadoPorOtras(i, lote_id));
 
-            let v = store.kg(Number(input.value) || 0);
+            let v = store.kg(ui.aDecimal(input.value));
             if (v < 0) v = 0;
             if (v > tope) { v = tope; input.value = v; }
 
@@ -291,7 +291,7 @@
 
         cont.querySelectorAll('.precio').forEach(input => {
           input.oninput = () => {
-            lineas[Number(input.dataset.linea)].precio_unit = store.peso(Number(input.value) || 0);
+            lineas[Number(input.dataset.linea)].precio_unit = store.peso(ui.aEntero(input.value));
             refrescar();
           };
         });
@@ -408,6 +408,37 @@
     ].filter(l => l !== '').join('\n');
   }
 
+  // Anular no borra: marca. El producto vuelve solo a sus lotes porque el
+  // stock se deriva de los consumos vivos, y la plata vuelve porque el
+  // disponible se deriva de los movimientos vivos. Queda el rastro.
+  function anularVenta(venta) {
+    const items = store.donde('venta_items', 'venta_id', venta.id);
+    const cobros = store.donde('movimientos', 'venta_id', venta.id);
+    const total = store.totalVenta(venta.id);
+    const cobrado = store.cobrado(venta.id);
+
+    const vuelve = items.reduce((s, it) => s + store.cubierto(it.id), 0);
+
+    const detalle = [
+      'Son ' + fmt.pesos(total) + '.',
+      vuelve > 0 ? 'El producto entregado vuelve a los lotes de donde salió.' : '',
+      cobrado > 0 ? 'Se revierten ' + fmt.pesos(cobrado) + ' ya cobrados.' : '',
+      'Queda marcado como anulado, no se borra: el rastro se conserva.'
+    ].filter(Boolean).join(' ');
+
+    ui.confirmar('Anular el pedido ' + (venta.numero || 's/n'), detalle, () => {
+      items.forEach(it => {
+        store.donde('consumos', 'venta_item_id', it.id)
+          .forEach(c => store.anular('consumos', c.id));
+        store.anular('venta_items', it.id);
+      });
+      cobros.forEach(m => store.anular('movimientos', m.id));
+      store.anular('ventas', venta.id);
+      ui.volver();
+      ui.aviso('Pedido anulado');
+    }, 'Anular el pedido');
+  }
+
   function factura(venta) {
     return {
       titulo: 'Pedido ' + (venta.numero || 's/n'),
@@ -481,7 +512,10 @@
             Ver la factura
           </button>
           ${saldo > 0 ? '<button class="boton boton--fantasma boton--bloque" id="abonar" style="margin-top:10px">Registrar abono</button>' : ''}
-          ${falta > 0 ? '<button class="boton boton--fantasma boton--bloque" id="completar" style="margin-top:10px">Completar entrega</button>' : ''}`;
+          ${falta > 0 ? '<button class="boton boton--fantasma boton--bloque" id="completar" style="margin-top:10px">Completar entrega</button>' : ''}
+
+          <button class="boton boton--peligro boton--bloque" id="anular"
+                  style="margin-top:28px">Anular este pedido</button>`;
       },
 
       listo(cont) {
@@ -510,6 +544,8 @@
         if (abonar) abonar.onclick = () => OM.clientes.registrarCobro(venta);
         const completar = cont.querySelector('#completar');
         if (completar) completar.onclick = () => completarEntrega(venta);
+
+        cont.querySelector('#anular').onclick = () => anularVenta(venta);
       }
     };
   }

@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.3';
+  const VERSION = '1.4';
   const store = OM.store;
 
   /* ── formato ──────────────────────────────────────────────────────── */
@@ -41,6 +41,34 @@
     },
     dias: n => n <= 0 ? 'hoy' : n === 1 ? 'hace 1 día' : 'hace ' + n + ' días'
   };
+
+  // El teclado del celular en Colombia ofrece COMA para los decimales, pero un
+  // <input type="number"> solo acepta punto: la coma se rechaza en silencio y
+  // no hay forma de escribir 2,44. Por eso los campos numéricos son de texto
+  // con inputmode, y el número se interpreta acá.
+  //
+  // Si hay coma, la coma es el decimal y los puntos son miles ("1.234,56").
+  // Si no hay coma, un punto es el decimal ("2.44"), que es lo que escribe
+  // quien viene de un teclado de computador.
+  // Lo que no se pueda interpretar vale 0, nunca NaN: un campo obligatorio en
+  // 0 falla la validación con un mensaje claro, y uno opcional en 0 no hace
+  // nada. Un NaN, en cambio, se colaría hasta guardarse.
+  function aDecimal(texto) {
+    let s = String(texto == null ? '' : texto).trim().replace(/\s/g, '');
+    if (!s) return 0;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    const n = Number(s);
+    return isFinite(n) ? n : 0;
+  }
+
+  // En los montos no hay decimales: punto y coma son separadores de miles,
+  // así que "60.000" es sesenta mil y no sesenta.
+  function aEntero(texto) {
+    const s = String(texto == null ? '' : texto).replace(/[^\d-]/g, '');
+    if (!s) return 0;
+    const n = Number(s);
+    return isFinite(n) ? n : 0;
+  }
 
   const hoy = () => {
     const d = new Date();
@@ -208,10 +236,11 @@
       } else if (c.tipo === 'area') {
         control = `<textarea name="${c.nombre}" rows="2">${esc(v)}</textarea>`;
       } else {
+        const conDecimales = c.tipo === 'numero' && String(c.paso || '').includes('.');
         const extra = c.tipo === 'numero'
-          ? ` inputmode="decimal" step="${c.paso || 'any'}"${c.min != null ? ' min="' + c.min + '"' : ''}`
+          ? ` inputmode="${conDecimales ? 'decimal' : 'numeric'}"`
           : '';
-        const tipo = c.tipo === 'numero' ? 'number' : c.tipo === 'fecha' ? 'date' : 'text';
+        const tipo = c.tipo === 'fecha' ? 'date' : 'text';
         control = `<input type="${tipo}" name="${c.nombre}" value="${esc(v)}"${extra}
                      ${c.autofoco ? 'autofocus' : ''} ${c.sugerencia ? 'placeholder="' + esc(c.sugerencia) + '"' : ''}>`;
       }
@@ -239,7 +268,9 @@
             const datos = {};
             (opciones.campos || []).forEach(c => {
               const el = form.elements[c.nombre];
-              datos[c.nombre] = c.tipo === 'numero' ? Number(el.value) : el.value.trim();
+              if (c.tipo !== 'numero') { datos[c.nombre] = el.value.trim(); return; }
+              const conDecimales = String(c.paso || '').includes('.');
+              datos[c.nombre] = conDecimales ? aDecimal(el.value) : aEntero(el.value);
             });
 
             const faltante = (opciones.campos || []).find(c =>
@@ -288,6 +319,6 @@
   window.OM = window.OM || {};
   window.OM.ui = {
     VERSION, arrancar, pantalla, ir, abrir, volver, render,
-    fmt, esc, hoy, vacio, aviso, hoja, formulario, confirmar
+    fmt, esc, hoy, vacio, aviso, hoja, formulario, confirmar, aDecimal, aEntero
   };
 })();
