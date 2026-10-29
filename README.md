@@ -50,6 +50,7 @@ ni los respaldos.
    |---|---|
    | `schema.sql` | tablas, RLS, triggers, consecutivos |
    | `02-factura.sql` | cantidades con dos decimales, vendedores, datos de la factura |
+   | `03-productos.sql` | el catálogo inicial de 109 productos |
 4. Authentication → Users → **Add user** para cada persona que va a usarla
    (correo y contraseña). No hay registro desde la app, a propósito.
 5. Copiar de **Project Settings → Data API**:
