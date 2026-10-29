@@ -21,7 +21,17 @@
 window.OM = window.OM || {};
 
 window.OM.config = {
-  negocio: 'Orange Market',
+  // Lo que sale impreso en la factura que se manda por WhatsApp.
+  negocio: {
+    nombre:   'ORANGE MARKET',
+    telefono: '3104957102',
+    whatsapp: '3505443081',
+    pie: [
+      'Favor consignar a la cuenta de ahorros Bancolombia 005-000022-63',
+      'A nombre de Orangel Romero Cantillo'
+    ]
+  },
+
   supabase: {
     url:  'https://nxblaxoixqzpnlqfwejo.supabase.co',
     anon: 'sb_publishable_Tg0vHwo-pvmCe9xu5kdbUQ_zdzThSQ_'

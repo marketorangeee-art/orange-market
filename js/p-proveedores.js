@@ -117,7 +117,7 @@
           titulo: producto.nombre,
           campos: [
             { nombre: 'cantidad', etiqueta: 'Cantidad en ' + producto.unidad + 's',
-              tipo: 'numero', paso: '0.1', requerido: true, autofoco: true },
+              tipo: 'numero', paso: '0.01', requerido: true, autofoco: true },
             { nombre: 'costo_unit', etiqueta: 'Costo por ' + fmt.unidad(producto.unidad),
               tipo: 'numero', paso: '1', requerido: true }
           ],

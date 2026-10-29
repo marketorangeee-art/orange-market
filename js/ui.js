@@ -8,13 +8,13 @@
 (function () {
   'use strict';
 
-  const VERSION = '0.9';
+  const VERSION = '1.0';
   const store = OM.store;
 
   /* ── formato ──────────────────────────────────────────────────────── */
 
   const nf0 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
-  const nf1 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
+  const nf1 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
   const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
                  'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const ABREV = { kilo: 'kg', libra: 'lb', unidad: 'un' };

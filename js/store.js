@@ -10,18 +10,22 @@
 (function () {
   'use strict';
 
-  const TABLAS = ['productos', 'proveedores', 'clientes', 'compras',
-                  'compra_items', 'ventas', 'venta_items', 'consumos',
-                  'movimientos'];
+  const TABLAS = ['productos', 'proveedores', 'clientes', 'vendedores',
+                  'compras', 'compra_items', 'ventas', 'venta_items',
+                  'consumos', 'movimientos'];
 
   const datos = {};
 
   // ── piso ──────────────────────────────────────────────────────────────
 
-  // Las cantidades van a un decimal (3.5 kg). Sumar flotantes arrastra basura
-  // (0.1 + 0.2 = 0.30000000000000004) y un restante de 0.0000001 hace que un
-  // lote vacío siga apareciendo como disponible.
-  const kg = n => Math.round((Number(n) || 0) * 10) / 10;
+  // Las cantidades van a dos decimales, que es lo que marca la balanza:
+  // 2,44 kg. Redondear a uno solo convierte esos 2,44 en 2,4 y la línea
+  // pierde plata.
+  //
+  // Sumar flotantes arrastra basura (0.1 + 0.2 = 0.30000000000000004) y un
+  // restante de 0.0000001 haría que un lote vacío siguiera apareciendo como
+  // disponible, así que cada suma vuelve a redondearse.
+  const kg = n => Math.round((Number(n) || 0) * 100) / 100;
   const peso = n => Math.round(Number(n) || 0);
 
   const clave = t => 'om.' + t;

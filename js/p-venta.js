@@ -19,12 +19,41 @@
   const ui = OM.ui;
   const { fmt, esc } = ui;
 
-  const borrador = { cliente_id: null, fecha: ui.hoy(), items: [] };
+  const borrador = {
+    cliente_id: null,
+    fecha: ui.hoy(),
+    items: [],
+    vendedor: '',
+    medio_pago: 'efectivo'
+  };
+
+  const MEDIOS = [
+    { valor: 'efectivo',      texto: 'Efectivo' },
+    { valor: 'transferencia', texto: 'Transferencia' }
+  ];
+
+  function nuevoVendedor() {
+    ui.formulario({
+      titulo: 'Nuevo vendedor',
+      campos: [{ nombre: 'nombre', etiqueta: 'Nombre', requerido: true, autofoco: true }],
+      textoGuardar: 'Crear',
+      alGuardar: datos => {
+        const repetido = store.todos('vendedores')
+          .some(v => v.nombre.toLowerCase() === datos.nombre.toLowerCase());
+        if (repetido) return 'Ya existe un vendedor con ese nombre.';
+        store.guardar('vendedores', { nombre: datos.nombre });
+        borrador.vendedor = datos.nombre;
+      }
+    });
+  }
 
   const limpiar = () => {
     borrador.cliente_id = null;
     borrador.fecha = ui.hoy();
     borrador.items = [];
+    borrador.medio_pago = 'efectivo';
+    // el vendedor NO se limpia: en un turno lo normal es que siga siendo el
+    // mismo, y volver a elegirlo en cada venta es un estorbo
   };
 
   const producto = id => store.uno('productos', id) || { nombre: '—', unidad: '' };
@@ -84,7 +113,7 @@
         titulo: p.nombre,
         campos: [
           { nombre: 'cantidad', etiqueta: 'Cantidad en ' + p.unidad + 's',
-            tipo: 'numero', paso: '0.1', requerido: true, autofoco: true },
+            tipo: 'numero', paso: '0.01', requerido: true, autofoco: true },
           { nombre: 'precio_unit', etiqueta: 'Precio de venta por ' + fmt.unidad(p.unidad),
             tipo: 'numero', paso: '1', requerido: true, ayuda: ayuda }
         ],
@@ -164,7 +193,7 @@
                     hay <span id="disp-${i}-${l.id}">${fmt.cant(libre, p.unidad)}</span>
                   </div>
                 </div>
-                <input type="number" inputmode="decimal" step="0.1" min="0"
+                <input type="number" inputmode="decimal" step="0.01" min="0"
                        class="lote__cant" data-linea="${i}" data-lote="${l.id}"
                        value="${puesto ? puesto.cantidad : 0}">
               </div>`;
@@ -279,6 +308,10 @@
     const venta = store.guardar('ventas', {
       cliente_id: borrador.cliente_id,
       fecha: borrador.fecha,
+      // copia, no referencia: la factura entregada no puede cambiar porque
+      // después se renombre o se dé de baja a esa persona
+      vendedor: borrador.vendedor,
+      medio_pago: borrador.medio_pago,
       nota: '',
       numero: store.siguienteNumero('ventas')
     });
@@ -442,21 +475,37 @@
               </div>`).join('')}` : ''}
 
           <button class="boton boton--bloque" id="compartir" style="margin-top:18px">
-            Enviar por WhatsApp
+            Enviar factura por WhatsApp
+          </button>
+          <button class="boton boton--fantasma boton--bloque" id="ver" style="margin-top:10px">
+            Ver la factura
           </button>
           ${saldo > 0 ? '<button class="boton boton--fantasma boton--bloque" id="abonar" style="margin-top:10px">Registrar abono</button>' : ''}
           ${falta > 0 ? '<button class="boton boton--fantasma boton--bloque" id="completar" style="margin-top:10px">Completar entrega</button>' : ''}`;
       },
 
       listo(cont) {
-        cont.querySelector('#compartir').onclick = () => {
-          const texto = textoFactura(venta);
-          if (navigator.share) {
-            navigator.share({ text: texto }).catch(() => {});
-          } else {
-            window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+        const boton = cont.querySelector('#compartir');
+        boton.onclick = async () => {
+          boton.disabled = true;
+          boton.textContent = 'Armando el PDF…';
+          try {
+            const salida = await OM.factura.compartir(venta);
+            if (salida === 'descargado') ui.aviso('Factura descargada');
+          } catch (e) {
+            // Que no se quede sin poder mandar nada: si el PDF falla, va el
+            // mismo contenido como texto.
+            ui.aviso('No se pudo armar el PDF, va como texto');
+            const texto = textoFactura(venta);
+            if (navigator.share) navigator.share({ text: texto }).catch(() => {});
+            else window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
           }
+          boton.disabled = false;
+          boton.textContent = 'Enviar factura por WhatsApp';
         };
+
+        cont.querySelector('#ver').onclick = () =>
+          OM.factura.verEnPantalla(venta).catch(() => ui.aviso('No se pudo abrir la factura'));
         const abonar = cont.querySelector('#abonar');
         if (abonar) abonar.onclick = () => OM.clientes.registrarCobro(venta);
         const completar = cont.querySelector('#completar');
@@ -514,6 +563,37 @@
             </button>`;
         }).join('');
 
+      const vendedores = store.todos('vendedores')
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      if (!borrador.vendedor && vendedores.length) borrador.vendedor = vendedores[0].nombre;
+
+      const tarjetaDatos = `
+        <div class="tarjeta">
+          <label class="campo">
+            <span class="campo__etiqueta">Vendedor</span>
+            <div style="display:flex;gap:8px">
+              <select id="vendedor" style="flex:1">
+                ${vendedores.length ? '' : '<option value="">sin vendedores todavía</option>'}
+                ${vendedores.map(v => `
+                  <option value="${esc(v.nombre)}" ${v.nombre === borrador.vendedor ? 'selected' : ''}>
+                    ${esc(v.nombre)}
+                  </option>`).join('')}
+              </select>
+              <button class="boton boton--fantasma" id="nuevo-vendedor"
+                      style="min-height:48px;padding:0 18px" title="Agregar vendedor">+</button>
+            </div>
+          </label>
+          <label class="campo" style="margin-bottom:0">
+            <span class="campo__etiqueta">Método de pago</span>
+            <select id="medio">
+              ${MEDIOS.map(m => `
+                <option value="${m.valor}" ${m.valor === borrador.medio_pago ? 'selected' : ''}>
+                  ${m.texto}
+                </option>`).join('')}
+            </select>
+          </label>
+        </div>`;
+
       // Lo que se le vendió la vez pasada, a la vista mientras se arma el
       // pedido. Es la referencia real para poner el precio de hoy.
       const previa = ultimaVenta(borrador.cliente_id);
@@ -561,6 +641,8 @@
           <div class="fila__valor tenue">›</div>
         </button>
 
+        ${tarjetaDatos}
+
         ${panelPrevia}
 
         <button class="boton boton--fantasma boton--bloque" id="agregar"
@@ -584,6 +666,10 @@
     listo(cont) {
       cont.querySelector('#cliente').onclick = () =>
         OM.clientes.elegir(c => { borrador.cliente_id = c.id; ui.render(); });
+
+      cont.querySelector('#vendedor').onchange = e => { borrador.vendedor = e.target.value; };
+      cont.querySelector('#medio').onchange = e => { borrador.medio_pago = e.target.value; };
+      cont.querySelector('#nuevo-vendedor').onclick = nuevoVendedor;
 
       cont.querySelector('#agregar').onclick = () => {
         if (!borrador.cliente_id) return ui.aviso('Elegí primero el cliente');

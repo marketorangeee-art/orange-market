@@ -43,7 +43,13 @@ ni los respaldos.
 1. Crear el proyecto en [supabase.com](https://supabase.com) (plan free sirve).
 2. **Authentication → Providers → Email: apagar "Enable Signups".**
    Los perfiles nacen activos; si el registro queda abierto, cualquiera entra.
-3. SQL Editor → pegar y correr `supabase/schema.sql` completo.
+3. SQL Editor → correr los archivos de `supabase/` **en orden**, cada uno
+   completo y en su propia consulta:
+
+   | Archivo | Qué agrega |
+   |---|---|
+   | `schema.sql` | tablas, RLS, triggers, consecutivos |
+   | `02-factura.sql` | cantidades con dos decimales, vendedores, datos de la factura |
 4. Authentication → Users → **Add user** para cada persona que va a usarla
    (correo y contraseña). No hay registro desde la app, a propósito.
 5. Copiar de **Project Settings → Data API**:
