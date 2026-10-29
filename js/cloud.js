@@ -300,6 +300,44 @@
       .subscribe();
   }
 
+  /* ── buscar actualización ─────────────────────────────────────────── */
+
+  // Compara la versión que corre con la que hay publicada, pidiéndola a la red
+  // sin pasar por ninguna caché. Decir "ya estás en la última" sin haber
+  // mirado no serviría de nada.
+  async function buscarActualizacion(boton) {
+    const original = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = 'Buscando…';
+
+    try {
+      const texto = await fetch('js/ui.js?v=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.text());
+      const encontrada = texto.match(/const VERSION = '([^']+)'/);
+      const publicada = encontrada ? encontrada[1] : null;
+
+      if (!publicada || publicada === OM.ui.VERSION) {
+        boton.textContent = 'Ya tenés la última (' + OM.ui.VERSION + ')';
+        setTimeout(() => { boton.textContent = original; boton.disabled = false; }, 2500);
+        return;
+      }
+
+      boton.textContent = 'Instalando la ' + publicada + '…';
+
+      // Forzar al service worker a revisar su propio archivo. Sin esto puede
+      // seguir sirviendo el código viejo hasta la próxima apertura.
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.update();
+      }
+      setTimeout(() => location.reload(), 800);
+
+    } catch (e) {
+      boton.textContent = 'Sin conexión para buscar';
+      setTimeout(() => { boton.textContent = original; boton.disabled = false; }, 2500);
+    }
+  }
+
   /* ── estado visible y diagnóstico ─────────────────────────────────── */
 
   const SEMAFORO = {
@@ -367,6 +405,12 @@
 
     const { cerrar } = OM.ui.hoja({ titulo: 'Conexión', cuerpo, acciones });
 
+    const actualizar = document.createElement('button');
+    actualizar.className = 'boton boton--fantasma boton--bloque';
+    actualizar.style.marginTop = '10px';
+    actualizar.textContent = 'Buscar actualización';
+    actualizar.onclick = () => buscarActualizacion(actualizar);
+
     const extra = document.createElement('div');
     extra.style.cssText = 'display:flex;gap:10px;margin-top:10px';
     if (sb && sesion) {
@@ -396,9 +440,13 @@
         }, 'Borrar todo');
     };
     extra.appendChild(borrar);
-    document.querySelector('.hoja__acciones').insertAdjacentElement('beforebegin', extra);
+
+    const pie = document.querySelector('.hoja__acciones');
+    pie.insertAdjacentElement('beforebegin', actualizar);
+    pie.insertAdjacentElement('beforebegin', extra);
   }
 
   window.OM = window.OM || {};
-  window.OM.cloud = { iniciar, sincronizar, revisar, salir, estado: () => estado };
+  window.OM.cloud = { iniciar, sincronizar, revisar, salir, buscarActualizacion,
+                      estado: () => estado };
 })();

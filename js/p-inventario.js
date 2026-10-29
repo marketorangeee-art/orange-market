@@ -64,6 +64,38 @@
     });
   }
 
+  // Un producto que ya se compró o se vendió no se borra: sus lotes y sus
+  // ventas quedarían sin nombre y el historial dejaría de poder leerse.
+  function eliminar(producto) {
+    const compras = store.donde('compra_items', 'producto_id', producto.id).length;
+    const ventas = store.donde('venta_items', 'producto_id', producto.id).length;
+
+    if (compras || ventas) {
+      const partes = [];
+      if (compras) partes.push(compras + (compras === 1 ? ' compra' : ' compras'));
+      if (ventas) partes.push(ventas + (ventas === 1 ? ' venta' : ' ventas'));
+      return ui.hoja({
+        titulo: 'No se puede eliminar',
+        cuerpo: `
+          <p>${esc(producto.nombre)} aparece en ${partes.join(' y ')}.
+             Borrarlo dejaría ese historial sin nombre.</p>
+          <p class="tenue" style="margin-top:10px">
+            Si no lo vas a usar más, dejalo: sin existencias no estorba, queda
+            al final del inventario.
+          </p>`,
+        acciones: [{ texto: 'Entendido', clase: 'boton', alClic: c => c() }]
+      });
+    }
+
+    ui.confirmar('Eliminar ' + producto.nombre,
+      'Nunca se compró ni se vendió, así que no se pierde ningún historial.',
+      () => {
+        store.anular('productos', producto.id);
+        ui.volver();
+        ui.aviso('Producto eliminado');
+      }, 'Eliminar');
+  }
+
   // Selector reutilizable: lo usa la compra y lo va a usar la venta. Deja crear
   // el producto ahí mismo, porque en medio de cargar una compra nadie quiere
   // irse a otra pestaña.
@@ -163,10 +195,13 @@
               </div>`).join('')}` : ''}
 
           <button class="boton boton--fantasma boton--bloque" id="editar"
-                  style="margin-top:18px">Editar producto</button>`;
+                  style="margin-top:18px">Editar producto</button>
+          <button class="boton boton--peligro boton--bloque" id="eliminar"
+                  style="margin-top:10px">Eliminar producto</button>`;
       },
       listo(cont) {
         cont.querySelector('#editar').onclick = () => editar(producto);
+        cont.querySelector('#eliminar').onclick = () => eliminar(producto);
       }
     };
   }
@@ -222,5 +257,5 @@
     }
   });
 
-  OM.productos = { crear, editar, elegir, UNIDADES };
+  OM.productos = { crear, editar, eliminar, elegir, UNIDADES };
 })();

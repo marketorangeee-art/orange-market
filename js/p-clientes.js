@@ -78,6 +78,40 @@
     });
   }
 
+  // Un cliente con pedidos no se borra: esos pedidos quedarían sin dueño y el
+  // historial dejaría de poder leerse. Primero se anulan los pedidos, que es
+  // una decisión distinta y más visible.
+  function eliminar(cliente) {
+    const ventas = ventasDe(cliente.id);
+
+    if (ventas.length) {
+      const debe = deudaDe(cliente.id);
+      return ui.hoja({
+        titulo: 'No se puede eliminar',
+        cuerpo: `
+          <p>${esc(cliente.nombre)} tiene ${ventas.length}
+             pedido${ventas.length === 1 ? '' : 's'} registrado${ventas.length === 1 ? '' : 's'}.
+             Borrarlo dejaría ese historial sin dueño.</p>
+          ${debe > 0
+            ? `<p class="aviso" style="margin-top:10px">Además te debe ${fmt.pesos(debe)}.</p>`
+            : ''}
+          <p class="tenue" style="margin-top:10px">
+            Si los pedidos fueron un error, anulá cada uno desde su factura y
+            después volvé acá.
+          </p>`,
+        acciones: [{ texto: 'Entendido', clase: 'boton', alClic: c => c() }]
+      });
+    }
+
+    ui.confirmar('Eliminar a ' + cliente.nombre,
+      'No tiene pedidos registrados, así que no se pierde ningún historial.',
+      () => {
+        store.anular('clientes', cliente.id);
+        ui.volver();
+        ui.aviso('Cliente eliminado');
+      }, 'Eliminar');
+  }
+
   function elegir(alElegir) {
     const clientes = store.todos('clientes').sort((a, b) => a.nombre.localeCompare(b.nombre));
 
@@ -212,10 +246,13 @@
           ${filas || ui.vacio('🧾', 'Todavía no le vendés nada a este cliente.')}
 
           <button class="boton boton--fantasma boton--bloque" id="editar"
-                  style="margin-top:18px">Editar cliente</button>`;
+                  style="margin-top:18px">Editar cliente</button>
+          <button class="boton boton--peligro boton--bloque" id="eliminar"
+                  style="margin-top:10px">Eliminar cliente</button>`;
       },
       listo(cont) {
         cont.querySelector('#editar').onclick = () => editar(cliente);
+        cont.querySelector('#eliminar').onclick = () => eliminar(cliente);
         cont.querySelectorAll('[data-venta]').forEach(b => {
           b.onclick = () => ui.abrir(OM.ventas.factura(store.uno('ventas', b.dataset.venta)));
         });
@@ -282,5 +319,6 @@
     }
   });
 
-  OM.clientes = { crear, editar, elegir, detalle, registrarCobro, ventasDe, deudaDe };
+  OM.clientes = { crear, editar, eliminar, elegir, detalle, registrarCobro,
+                  ventasDe, deudaDe };
 })();

@@ -62,6 +62,86 @@
     });
   }
 
+  // Un proveedor con compras no se borra: esas compras son los lotes de donde
+  // salió el producto, y sin proveedor el inventario deja de poder rastrearse.
+  function eliminarProveedor(proveedor) {
+    const compras = comprasDe(proveedor.id);
+
+    if (compras.length) {
+      const debe = compras.reduce((s, c) => s + store.saldoCompra(c.id), 0);
+      return ui.hoja({
+        titulo: 'No se puede eliminar',
+        cuerpo: `
+          <p>${esc(proveedor.nombre)} tiene ${compras.length}
+             pedido${compras.length === 1 ? '' : 's'} registrado${compras.length === 1 ? '' : 's'}.
+             De esos pedidos salió el producto que hay en inventario: sin el
+             proveedor no se podría rastrear de dónde vino cada kilo.</p>
+          ${debe > 0
+            ? `<p class="aviso" style="margin-top:10px">Además le debés ${fmt.pesos(debe)}.</p>`
+            : ''}
+          <p class="tenue" style="margin-top:10px">
+            Si los pedidos fueron un error, anulá cada uno desde su detalle y
+            después volvé acá.
+          </p>`,
+        acciones: [{ texto: 'Entendido', clase: 'boton', alClic: c => c() }]
+      });
+    }
+
+    ui.confirmar('Eliminar a ' + proveedor.nombre,
+      'No tiene pedidos registrados, así que no se pierde ningún historial.',
+      () => {
+        store.anular('proveedores', proveedor.id);
+        ui.volver();
+        ui.aviso('Proveedor eliminado');
+      }, 'Eliminar');
+  }
+
+  // Anular una compra devuelve el producto: deja de existir el lote. Por eso
+  // no se puede anular si ya se vendió algo de ahí — ese producto salió del
+  // local y la venta quedaría apuntando a un lote que nunca existió.
+  function anularCompra(compra) {
+    const lotes = store.lotes().filter(l => l.compra_id === compra.id);
+    const vendido = lotes.filter(l => l.vendido > 0);
+
+    if (vendido.length) {
+      return ui.hoja({
+        titulo: 'No se puede anular',
+        cuerpo: `
+          <p>De este pedido ya se vendió producto:</p>
+          ${vendido.map(l => `
+            <div class="previa__pie">
+              <span>${esc(nombreProducto(l.producto_id))}</span>
+              <span class="monto">${fmt.cant(l.vendido, unidadDe(l.producto_id))}</span>
+            </div>`).join('')}
+          <p class="tenue" style="margin-top:12px">
+            Anularlo dejaría esas ventas apuntando a un lote inexistente.
+            Anulá primero las ventas que sacaron de acá.
+          </p>`,
+        acciones: [{ texto: 'Entendido', clase: 'boton', alClic: c => c() }]
+      });
+    }
+
+    const total = store.totalCompra(compra.id);
+    const pagado = store.pagado(compra.id);
+
+    const detalle = [
+      'Son ' + fmt.pesos(total) + '.',
+      'El producto que entró deja de estar en inventario.',
+      pagado > 0 ? 'Se revierten ' + fmt.pesos(pagado) + ' ya pagados.' : '',
+      'Queda marcado como anulado, no se borra.'
+    ].filter(Boolean).join(' ');
+
+    ui.confirmar('Anular el pedido ' + (compra.numero || 's/n'), detalle, () => {
+      store.donde('compra_items', 'compra_id', compra.id)
+        .forEach(li => store.anular('compra_items', li.id));
+      store.donde('movimientos', 'compra_id', compra.id)
+        .forEach(m => store.anular('movimientos', m.id));
+      store.anular('compras', compra.id);
+      ui.volver();
+      ui.aviso('Pedido anulado');
+    }, 'Anular el pedido');
+  }
+
   /* ── pago a una compra ────────────────────────────────────────────── */
 
   // Se pregunta siempre, al crear la compra y cada vez que se vuelva a abonar:
@@ -274,11 +354,15 @@
             </div>`).join('')
             : '<p class="tenue" style="padding:0 2px 8px">Sin pagos todavía.</p>'}
 
-          ${saldo > 0 ? `<button class="boton boton--bloque" id="pagar">Registrar pago</button>` : ''}`;
+          ${saldo > 0 ? `<button class="boton boton--bloque" id="pagar">Registrar pago</button>` : ''}
+
+          <button class="boton boton--peligro boton--bloque" id="anular"
+                  style="margin-top:28px">Anular este pedido</button>`;
       },
       listo(cont) {
         const b = cont.querySelector('#pagar');
         if (b) b.onclick = () => registrarPago(compra);
+        cont.querySelector('#anular').onclick = () => anularCompra(compra);
       }
     };
   }
@@ -330,11 +414,14 @@
           ${filas || ui.vacio('🧾', 'Todavía no le comprás nada a este proveedor.')}
 
           <button class="boton boton--fantasma boton--bloque" id="editar"
-                  style="margin-top:18px">Editar proveedor</button>`;
+                  style="margin-top:18px">Editar proveedor</button>
+          <button class="boton boton--peligro boton--bloque" id="eliminar"
+                  style="margin-top:10px">Eliminar proveedor</button>`;
       },
       listo(cont) {
         cont.querySelector('#nueva').onclick = () => ui.abrir(nuevaCompra(proveedor));
         cont.querySelector('#editar').onclick = () => editarProveedor(proveedor);
+        cont.querySelector('#eliminar').onclick = () => eliminarProveedor(proveedor);
         cont.querySelectorAll('[data-compra]').forEach(b => {
           b.onclick = () => ui.abrir(
             detalleCompra(store.uno('compras', b.dataset.compra), proveedor));
@@ -393,5 +480,6 @@
     }
   });
 
-  OM.compras = { detalle: detalleCompra, registrarPago, nuevaCompra };
+  OM.compras = { detalle: detalleCompra, registrarPago, nuevaCompra,
+                 anular: anularCompra, eliminarProveedor };
 })();
