@@ -13,11 +13,13 @@
   const store = OM.store;
   const cfg = (OM.config && OM.config.supabase) || {};
 
-  // Versión exacta y fija: una actualización del SDK no puede romper la app
+  // El SDK vive en el repositorio, no en un CDN. Dos razones: la app depende
+  // de un solo sitio ajeno (el propio Supabase) en vez de dos, y el service
+  // worker puede guardarlo — a un archivo de otro dominio no puede, así que
+  // desde un CDN la sesión no se podría recuperar sin señal.
+  // Versión 2.117.3, fija: una actualización del SDK no puede romper la app
   // de un día para otro sin que nadie la haya tocado.
-  // Desde la 2.49 entiende las claves publicables (sb_publishable_…), que son
-  // las que entrega Supabase en los proyectos nuevos.
-  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js';
+  const SDK = 'js/vendor/supabase.umd.js';
 
   const MARCA_CERO = '1970-01-01T00:00:00Z';
   const CADA = 20000;
@@ -128,6 +130,12 @@
           <div class="mal" id="error" hidden style="margin-bottom:12px"></div>
           <button class="boton boton--bloque entrada__entrar" type="submit">Entrar</button>
         </form>
+
+        <p style="text-align:center;margin-top:22px">
+          <a href="guia.html" style="color:var(--texto-2);font-size:14px">
+            ¿Cómo instalo la app?
+          </a>
+        </p>
       </div>`;
 
     const form = cont.querySelector('#entrar');

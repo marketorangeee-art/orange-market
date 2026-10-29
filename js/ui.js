@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.0';
+  const VERSION = '1.2';
   const store = OM.store;
 
   /* ── formato ──────────────────────────────────────────────────────── */

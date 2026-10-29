@@ -131,7 +131,30 @@ garantizar nada. Ya pasó una vez, con un cambio de CSS que no llegaba.
 
 ---
 
-## 5. Instalar
+## 5. Con qué se comunica
+
+La app se carga **entera desde su propia dirección**: el SDK de Supabase y el
+generador de PDF viven en `js/vendor/`, no en un CDN. Así depende de un solo
+sitio ajeno y el service worker puede guardarlos — a un archivo de otro dominio
+no puede, y sin eso la sesión no se podría recuperar sin señal.
+
+En funcionamiento solo habla con dos sitios:
+
+| Para qué | Dirección |
+|---|---|
+| Bajar la app | `marketorangeee-art.github.io` |
+| Datos y sesión | `nxblaxoixqzpnlqfwejo.supabase.co` (HTTPS y WebSocket) |
+
+Si una red corporativa o un filtro bloquea alguno de los dos, la app arranca
+pero queda en "sin señal" y no sincroniza. Todo lo que se trabaje en ese rato
+queda guardado y sube cuando se recupere la conexión.
+
+La guía para los usuarios está en `guia.html`, publicada junto a la app:
+**https://marketorangeee-art.github.io/orange-market/guia.html**
+
+---
+
+## 6. Instalar
 
 **PC (Chrome o Edge):** el ícono de instalar en la barra de direcciones. Queda
 con ventana propia, ícono en el escritorio y en el menú de inicio.
@@ -143,7 +166,7 @@ existe la opción.
 
 ---
 
-## 6. Cuando algo falla
+## 7. Cuando algo falla
 
 El botón de conexión de la cabecera abre el diagnóstico: estado, usuario, si el
 perfil está activo, versión que corre ese equipo, cuántas filas hay sin subir y
@@ -158,7 +181,7 @@ empezar en serio: borra lo de ese equipo y vuelve a bajar del servidor.
 
 ---
 
-## 7. Convenciones
+## 8. Convenciones
 
 **Idioma:** todo en español — identificadores, comentarios y textos. Voseo.
 
