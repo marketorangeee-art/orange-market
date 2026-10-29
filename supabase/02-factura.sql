@@ -12,9 +12,48 @@
 -- línea pasa de $146.400 a $144.000: la venta pierde plata sola, y nadie lo
 -- nota hasta que no cuadra la caja.
 
+-- ⚠ Postgres no deja cambiarle el tipo a una columna de la que dependa una
+--   vista: "cannot alter type of a column used by a view or rule". Hay que
+--   bajar las vistas, cambiar las columnas y volver a crearlas igual.
+--   v_stock se apoya en v_lotes, así que se baja primero.
+
+drop view if exists public.v_stock;
+drop view if exists public.v_lotes;
+
 alter table public.compra_items alter column cantidad type numeric(10,2);
 alter table public.venta_items  alter column cantidad type numeric(10,2);
 alter table public.consumos     alter column cantidad type numeric(10,2);
+
+create or replace view public.v_lotes as
+select
+  ci.id                         as lote_id,
+  c.numero                      as pedido,
+  c.fecha,
+  pr.nombre                     as proveedor,
+  p.nombre                      as producto,
+  p.unidad,
+  ci.cantidad,
+  coalesce(sum(co.cantidad), 0) as vendido,
+  ci.cantidad - coalesce(sum(co.cantidad), 0) as restante,
+  ci.costo_unit
+from public.compra_items ci
+  join public.compras      c  on c.id  = ci.compra_id
+  join public.proveedores  pr on pr.id = c.proveedor_id
+  join public.productos    p  on p.id  = ci.producto_id
+  left join public.consumos co on co.lote_id = ci.id and not co.deleted
+where not ci.deleted and not c.deleted
+group by ci.id, c.numero, c.fecha, pr.nombre, p.nombre, p.unidad,
+         ci.cantidad, ci.costo_unit;
+
+create or replace view public.v_stock as
+select
+  producto,
+  unidad,
+  sum(restante)              as stock,
+  sum(restante * costo_unit) as valor
+from public.v_lotes
+where restante > 0
+group by producto, unidad;
 
 
 -- ═══════════════════════════════════════════════ 2. vendedores
