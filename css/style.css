@@ -257,6 +257,36 @@ body {
 .hoja__acciones { display: flex; gap: 10px; margin-top: 18px; }
 .hoja__acciones > * { flex: 1; }
 
+/* ── la venta anterior, mientras se arma la nueva ────────────────────── */
+
+.previa__fila {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid var(--linea);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.previa__fila:active { background: var(--fondo-3); }
+.previa__nombre { font-weight: 600; min-width: 0; }
+.previa__cant { font-size: 13px; white-space: nowrap; }
+.previa__precio { white-space: nowrap; }
+
+.previa__pie {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+}
+
 /* ── asignación de lotes ─────────────────────────────────────────────── */
 
 .lote {

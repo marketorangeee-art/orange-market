@@ -54,8 +54,21 @@
 
   /* ── armar el pedido ──────────────────────────────────────────────── */
 
+  // La venta anterior a este cliente, completa. Es lo que de verdad se
+  // consulta al poner un precio y lo que nadie se acuerda de memoria.
+  function ultimaVenta(cliente_id) {
+    if (!cliente_id) return null;
+    return store.donde('ventas', 'cliente_id', cliente_id)
+      .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) ||
+                      (b.numero || 0) - (a.numero || 0))[0] || null;
+  }
+
   function agregarItem() {
-    OM.productos.elegir(p => {
+    OM.productos.elegir(p => pedirCantidad(p));
+  }
+
+  function pedirCantidad(p, precioSugerido) {
+    {
       const anterior = ultimoPrecio(borrador.cliente_id, p.id);
       const costo = costoProximo(p.id);
       const hay = store.stock(p.id);
@@ -75,7 +88,10 @@
           { nombre: 'precio_unit', etiqueta: 'Precio de venta por ' + fmt.unidad(p.unidad),
             tipo: 'numero', paso: '1', requerido: true, ayuda: ayuda }
         ],
-        valores: { precio_unit: anterior ? anterior.precio : '' },
+        valores: {
+          precio_unit: precioSugerido != null ? precioSugerido
+                     : anterior ? anterior.precio : ''
+        },
         textoGuardar: 'Agregar',
         alGuardar: datos => {
           borrador.items.push({
@@ -86,7 +102,7 @@
           });
         }
       });
-    });
+    }
   }
 
   /* ── asignación de lotes ──────────────────────────────────────────── */
@@ -498,6 +514,44 @@
             </button>`;
         }).join('');
 
+      // Lo que se le vendió la vez pasada, a la vista mientras se arma el
+      // pedido. Es la referencia real para poner el precio de hoy.
+      const previa = ultimaVenta(borrador.cliente_id);
+      let panelPrevia = '';
+
+      if (cliente && previa) {
+        const renglones = store.donde('venta_items', 'venta_id', previa.id).map(it => {
+          const p = producto(it.producto_id);
+          return `
+            <button class="previa__fila" data-repetir="${it.producto_id}"
+                    data-precio="${store.peso(it.precio_unit)}">
+              <span class="previa__nombre">${esc(p.nombre)}</span>
+              <span class="previa__cant tenue">${fmt.cant(it.cantidad, p.unidad)}</span>
+              <span class="previa__precio monto">${fmt.pesos(it.precio_unit)}</span>
+            </button>`;
+        }).join('');
+
+        panelPrevia = `
+          <div class="tarjeta">
+            <div class="tarjeta__titulo">
+              Última venta · pedido ${previa.numero || 's/n'} · ${fmt.fecha(previa.fecha)}
+            </div>
+            ${renglones}
+            <div class="previa__pie">
+              <span class="tenue">Total</span>
+              <span class="monto">${fmt.pesos(store.totalVenta(previa.id))}</span>
+            </div>
+            <div class="tenue" style="font-size:13px;margin-top:10px">
+              Tocá un renglón para venderle lo mismo al mismo precio.
+            </div>
+          </div>`;
+      } else if (cliente) {
+        panelPrevia = `
+          <div class="tarjeta">
+            <div class="tenue">Primera venta a ${esc(cliente.nombre)}.</div>
+          </div>`;
+      }
+
       return `
         <button class="fila" id="cliente">
           <div class="fila__cuerpo">
@@ -506,6 +560,8 @@
           </div>
           <div class="fila__valor tenue">›</div>
         </button>
+
+        ${panelPrevia}
 
         <button class="boton boton--fantasma boton--bloque" id="agregar"
                 style="margin:12px 0">+ Agregar producto</button>
@@ -548,6 +604,11 @@
 
       cont.querySelectorAll('[data-quitar]').forEach(b => {
         b.onclick = () => { borrador.items.splice(Number(b.dataset.quitar), 1); ui.render(); };
+      });
+
+      cont.querySelectorAll('[data-repetir]').forEach(b => {
+        b.onclick = () => pedirCantidad(store.uno('productos', b.dataset.repetir),
+                                        Number(b.dataset.precio));
       });
 
       cont.querySelectorAll('[data-venta]').forEach(b => {

@@ -192,7 +192,32 @@
             </div>`;
         }).join('');
 
+        // Lo primero que hay que ver acá es cuánto hay AHORA, no cuánto se
+        // puso alguna vez: es el número contra el que se decide un retiro.
+        const caja = store.disponible();
+        const debes = store.porPagar().total;
+
         return `
+          <div class="tarjeta">
+            <div class="tarjeta__titulo">Disponible ahora</div>
+            <div style="font-size:30px;font-weight:700;color:${caja.total < 0 ? 'var(--mal)' : 'var(--marca)'}">
+              ${fmt.pesos(caja.total)}
+            </div>
+            <div class="previa__pie" style="border-top:1px solid var(--linea);margin-top:10px">
+              <span class="tenue">En efectivo</span>
+              <span class="monto ${caja.efectivo < 0 ? 'mal' : ''}">${fmt.pesos(caja.efectivo)}</span>
+            </div>
+            <div class="previa__pie">
+              <span class="tenue">En la cuenta</span>
+              <span class="monto ${caja.transferencia < 0 ? 'mal' : ''}">${fmt.pesos(caja.transferencia)}</span>
+            </div>
+            ${debes > 0 ? `
+              <div class="aviso" style="margin-top:12px;font-size:14px">
+                Ojo: de esa plata, ${fmt.pesos(debes)} ya están comprometidos con
+                proveedores. Libre quedarían ${fmt.pesos(caja.total - debes)}.
+              </div>` : ''}
+          </div>
+
           <div class="rejilla">
             <div class="tarjeta">
               <div class="tarjeta__titulo">Capital puesto</div>
