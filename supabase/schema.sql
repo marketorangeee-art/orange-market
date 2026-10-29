@@ -55,7 +55,10 @@ create trigger al_crear_usuario
 create table if not exists public.productos (
   id         uuid primary key default gen_random_uuid(),
   nombre     text    not null,
-  unidad     text    not null check (unidad in ('kilo', 'libra', 'unidad')),
+  -- kilo_neto es el mismo kilogramo, pesado sin hielo ni glaseo. No cambia
+  -- ninguna cuenta: cambia lo que dice la factura.
+  unidad     text    not null
+             check (unidad in ('kilo', 'kilo_neto', 'libra', 'unidad')),
   updated_at timestamptz not null default now(),
   deleted    boolean not null default false
 );

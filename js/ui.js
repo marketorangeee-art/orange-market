@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  const VERSION = '1.2';
+  const VERSION = '1.3';
   const store = OM.store;
 
   /* ── formato ──────────────────────────────────────────────────────── */
@@ -17,7 +17,12 @@
   const nf1 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
   const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
                  'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  const ABREV = { kilo: 'kg', libra: 'lb', unidad: 'un' };
+  // "kilo neto" es el mismo kilogramo, pero pesado sin hielo ni glaseo. No
+  // cambia ninguna cuenta; cambia lo que dice la factura, que es lo que evita
+  // un reclamo.
+  const ABREV = { kilo: 'kg', kilo_neto: 'kg neto', libra: 'lb', unidad: 'un' };
+  const PLURAL = { kilo: 'kilos', kilo_neto: 'kilos netos',
+                   libra: 'libras', unidad: 'unidades' };
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -26,6 +31,7 @@
     pesos: n => '$ ' + nf0.format(Math.round(Number(n) || 0)),
     cant:  (n, u) => nf1.format(Number(n) || 0) + (u ? ' ' + (ABREV[u] || u) : ''),
     unidad: u => ABREV[u] || u,
+    plural: u => PLURAL[u] || u,
     fecha: f => {
       if (!f) return '';
       const p = String(f).slice(0, 10).split('-');

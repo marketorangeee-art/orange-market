@@ -12,9 +12,10 @@
   const { fmt, esc } = ui;
 
   const UNIDADES = [
-    { valor: 'kilo',   texto: 'Kilo' },
-    { valor: 'libra',  texto: 'Libra' },
-    { valor: 'unidad', texto: 'Unidad' }
+    { valor: 'kilo_neto', texto: 'Kilo neto (sin hielo ni glaseo)' },
+    { valor: 'kilo',      texto: 'Kilo' },
+    { valor: 'libra',     texto: 'Libra' },
+    { valor: 'unidad',    texto: 'Unidad' }
   ];
 
   const nombreProveedor = id => {

@@ -116,7 +116,7 @@
         ui.formulario({
           titulo: producto.nombre,
           campos: [
-            { nombre: 'cantidad', etiqueta: 'Cantidad en ' + producto.unidad + 's',
+            { nombre: 'cantidad', etiqueta: 'Cantidad en ' + fmt.plural(producto.unidad),
               tipo: 'numero', paso: '0.01', requerido: true, autofoco: true },
             { nombre: 'costo_unit', etiqueta: 'Costo por ' + fmt.unidad(producto.unidad),
               tipo: 'numero', paso: '1', requerido: true }

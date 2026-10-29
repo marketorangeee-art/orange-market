@@ -22,7 +22,7 @@
   const nf2 = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
   const pesos = n => '$ ' + nf0.format(Math.round(Number(n) || 0));
 
-  const UNIDAD = { kilo: 'KG', libra: 'LB', unidad: 'UND' };
+  const UNIDAD = { kilo: 'KG', kilo_neto: 'KG NETO', libra: 'LB', unidad: 'UND' };
   const MESES = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
 
   const fechaLarga = f => {

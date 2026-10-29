@@ -112,7 +112,7 @@
       ui.formulario({
         titulo: p.nombre,
         campos: [
-          { nombre: 'cantidad', etiqueta: 'Cantidad en ' + p.unidad + 's',
+          { nombre: 'cantidad', etiqueta: 'Cantidad en ' + fmt.plural(p.unidad),
             tipo: 'numero', paso: '0.01', requerido: true, autofoco: true },
           { nombre: 'precio_unit', etiqueta: 'Precio de venta por ' + fmt.unidad(p.unidad),
             tipo: 'numero', paso: '1', requerido: true, ayuda: ayuda }
