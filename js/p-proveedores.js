@@ -142,6 +142,99 @@
     }, 'Anular el pedido');
   }
 
+  /* ── editar una compra ────────────────────────────────────────────── */
+  //
+  // Los pedidos no siempre llegan completos. Corregir la cantidad es mejor que
+  // anular y volver a cargar: el pedido sigue siendo el mismo, con su número,
+  // su fecha y sus pagos.
+
+  function editarLinea(lote) {
+    const unidad = unidadDe(lote.producto_id);
+
+    ui.formulario({
+      titulo: nombreProducto(lote.producto_id),
+      campos: [
+        { nombre: 'cantidad', etiqueta: 'Cantidad en ' + fmt.plural(unidad),
+          tipo: 'numero', paso: '0.01', requerido: true, autofoco: true,
+          ayuda: lote.vendido > 0
+            ? `Ya se vendieron <b>${fmt.cant(lote.vendido, unidad)}</b> de este lote.`
+            : 'Lo que entró de verdad, si el pedido llegó incompleto.' },
+        { nombre: 'costo_unit', etiqueta: 'Costo por ' + fmt.unidad(unidad),
+          tipo: 'numero', paso: '1', requerido: true }
+      ],
+      valores: { cantidad: lote.cantidad, costo_unit: lote.costo_unit },
+      alGuardar: datos => {
+        // Bajar por debajo de lo ya vendido dejaría el lote en negativo: ese
+        // producto salió del local y no se puede deshacer desde acá.
+        if (datos.cantidad < lote.vendido) {
+          return 'De este lote ya se vendieron ' + fmt.cant(lote.vendido, unidad) +
+                 '. No puede quedar en menos que eso.';
+        }
+        const fila = store.uno('compra_items', lote.id);
+        if (!fila) return 'Ese renglón ya no existe.';
+        fila.cantidad = store.kg(datos.cantidad);
+        fila.costo_unit = store.peso(datos.costo_unit);
+        store.guardar('compra_items', fila);
+        ui.aviso('Renglón corregido');
+      }
+    });
+  }
+
+  function quitarLinea(lote) {
+    const unidad = unidadDe(lote.producto_id);
+    ui.confirmar('Quitar ' + nombreProducto(lote.producto_id),
+      'Entraron ' + fmt.cant(lote.cantidad, unidad) + ' y no se ha vendido nada. ' +
+      'Se sacan del pedido y del inventario.',
+      () => {
+        store.anular('compra_items', lote.id);
+        ui.aviso('Renglón quitado');
+      }, 'Quitar');
+  }
+
+  function agregarALaCompra(compra) {
+    OM.productos.elegir(producto => {
+      ui.formulario({
+        titulo: producto.nombre,
+        campos: [
+          { nombre: 'cantidad', etiqueta: 'Cantidad en ' + fmt.plural(producto.unidad),
+            tipo: 'numero', paso: '0.01', requerido: true, autofoco: true },
+          { nombre: 'costo_unit', etiqueta: 'Costo por ' + fmt.unidad(producto.unidad),
+            tipo: 'numero', paso: '1', requerido: true }
+        ],
+        textoGuardar: 'Agregar',
+        alGuardar: datos => {
+          store.guardar('compra_items', {
+            compra_id: compra.id,
+            producto_id: producto.id,
+            cantidad: store.kg(datos.cantidad),
+            costo_unit: store.peso(datos.costo_unit)
+          });
+          ui.aviso('Producto agregado al pedido');
+        }
+      });
+    });
+  }
+
+  function editarDatosCompra(compra) {
+    ui.formulario({
+      titulo: 'Datos del pedido ' + (compra.numero || 's/n'),
+      campos: [
+        { nombre: 'fecha', etiqueta: 'Fecha', tipo: 'fecha' },
+        { nombre: 'condicion', etiqueta: '¿Cómo se paga?', tipo: 'select',
+          opciones: [{ valor: 'contado', texto: 'De contado' },
+                     { valor: 'credito', texto: 'A crédito' }] },
+        { nombre: 'nota', etiqueta: 'Nota', tipo: 'area' }
+      ],
+      valores: compra,
+      alGuardar: datos => {
+        compra.fecha = datos.fecha || compra.fecha;
+        compra.condicion = datos.condicion;
+        compra.nota = datos.nota;
+        store.guardar('compras', compra);
+      }
+    });
+  }
+
   /* ── pago a una compra ────────────────────────────────────────────── */
 
   // Se pregunta siempre, al crear la compra y cada vez que se vuelva a abonar:
@@ -312,18 +405,25 @@
           const unidad = unidadDe(l.producto_id);
           const agotado = l.restante <= 0;
           return `
-            <div class="fila" style="cursor:default">
-              <div class="fila__cuerpo">
-                <div class="fila__titulo">${esc(nombreProducto(l.producto_id))}</div>
-                <div class="fila__detalle">
-                  Entraron ${fmt.cant(l.cantidad, unidad)} × ${fmt.pesos(l.costo_unit)}
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="fila" data-lote="${l.id}" style="flex:1;margin-bottom:8px">
+                <div class="fila__cuerpo">
+                  <div class="fila__titulo">${esc(nombreProducto(l.producto_id))}</div>
+                  <div class="fila__detalle">
+                    Entraron ${fmt.cant(l.cantidad, unidad)} × ${fmt.pesos(l.costo_unit)}
+                  </div>
                 </div>
-              </div>
-              <div class="fila__valor">
-                <span class="pildora ${agotado ? 'pildora--mal' : ''}">
-                  ${agotado ? 'agotado' : 'quedan ' + fmt.cant(l.restante, unidad)}
-                </span>
-              </div>
+                <div class="fila__valor">
+                  <span class="pildora ${agotado ? 'pildora--mal' : ''}">
+                    ${agotado ? 'agotado' : 'quedan ' + fmt.cant(l.restante, unidad)}
+                  </span>
+                </div>
+              </button>
+              ${l.vendido <= 0
+                ? `<button class="boton boton--peligro" data-quitar="${l.id}"
+                           style="min-height:40px;padding:0 12px;margin-bottom:8px"
+                           title="Quitar del pedido">✕</button>`
+                : ''}
             </div>`;
         }).join('');
 
@@ -341,8 +441,25 @@
             </div>
           </div>
 
-          <div class="tarjeta__titulo" style="margin:18px 0 8px">Qué entró en este pedido</div>
+          ${pagado > total ? `
+            <div class="tarjeta" style="border-color:rgba(255,181,61,.4)">
+              <div class="aviso">Pagaste ${fmt.pesos(pagado - total)} de más.</div>
+              <div class="tenue" style="margin-top:4px">
+                El pedido bajó de valor después de registrar el pago. Queda a favor
+                tuyo con el proveedor.
+              </div>
+            </div>` : ''}
+
+          <div class="tarjeta__titulo" style="margin:18px 0 8px">
+            Qué entró en este pedido
+          </div>
+          <div class="tenue" style="font-size:13px;margin-bottom:10px">
+            Tocá un renglón para corregir la cantidad si el pedido llegó incompleto.
+          </div>
           ${filas}
+
+          <button class="boton boton--fantasma boton--bloque" id="agregar"
+                  style="margin-bottom:6px">+ Agregar producto al pedido</button>
 
           <div class="tarjeta__titulo" style="margin:18px 0 8px">Pagos</div>
           ${pagos.length ? pagos.map(p => `
@@ -356,6 +473,8 @@
 
           ${saldo > 0 ? `<button class="boton boton--bloque" id="pagar">Registrar pago</button>` : ''}
 
+          <button class="boton boton--fantasma boton--bloque" id="datos"
+                  style="margin-top:10px">Editar fecha y condición</button>
           <button class="boton boton--peligro boton--bloque" id="anular"
                   style="margin-top:28px">Anular este pedido</button>`;
       },
@@ -363,6 +482,18 @@
         const b = cont.querySelector('#pagar');
         if (b) b.onclick = () => registrarPago(compra);
         cont.querySelector('#anular').onclick = () => anularCompra(compra);
+        cont.querySelector('#agregar').onclick = () => agregarALaCompra(compra);
+        cont.querySelector('#datos').onclick = () => editarDatosCompra(compra);
+
+        const lotes = store.lotes().filter(l => l.compra_id === compra.id);
+        const buscar = id => lotes.find(l => l.id === id);
+
+        cont.querySelectorAll('[data-lote]').forEach(x => {
+          x.onclick = () => editarLinea(buscar(x.dataset.lote));
+        });
+        cont.querySelectorAll('[data-quitar]').forEach(x => {
+          x.onclick = () => quitarLinea(buscar(x.dataset.quitar));
+        });
       }
     };
   }

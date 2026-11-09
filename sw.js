@@ -6,7 +6,7 @@
  *
  * ⚠ Subir CACHE en cada cambio de JS o CSS, junto con OM.ui.VERSION.
  */
-var CACHE = 'orange-v19';
+var CACHE = 'orange-v20';
 
 var BASE = [
   './',
@@ -23,7 +23,9 @@ var BASE = [
   'js/p-clientes.js',
   'js/p-venta.js',
   'js/p-resumen.js',
+  'js/p-cartera.js',
   'js/factura.js',
+  'js/exportar.js',
   'js/vendor/jspdf.umd.min.js',
   'js/vendor/supabase.umd.js',
   'assets/logo.png',

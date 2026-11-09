@@ -299,6 +299,77 @@
     return peso(total);
   }
 
+  // ── por rango de fechas ───────────────────────────────────────────────
+  //
+  // Las fechas van como texto 'AAAA-MM-DD', así que comparar con < y > ya
+  // ordena bien y no hace falta convertirlas a objetos Date — que además
+  // arrastrarían la zona horaria y correrían un día.
+
+  const enRango = (fecha, desde, hasta) =>
+    (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
+
+  function sumarDias(fecha, dias) {
+    const [a, m, d] = String(fecha).slice(0, 10).split('-').map(Number);
+    const t = new Date(Date.UTC(a, m - 1, d + (Number(dias) || 0)));
+    const dos = n => String(n).padStart(2, '0');
+    return t.getUTCFullYear() + '-' + dos(t.getUTCMonth() + 1) + '-' + dos(t.getUTCDate());
+  }
+
+  const sumaMov = (movs, tipo) =>
+    peso(movs.filter(m => m.tipo === tipo).reduce((s, m) => s + peso(m.monto), 0));
+
+  // Todo lo que pasó entre dos fechas. A diferencia de resumen(), que es una
+  // foto del momento, esto es lo que se movió.
+  function periodo(desde, hasta) {
+    const ventas = todos('ventas').filter(v => enRango(v.fecha, desde, hasta))
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const compras = todos('compras').filter(c => enRango(c.fecha, desde, hasta))
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const movs = todos('movimientos').filter(m => enRango(m.fecha, desde, hasta))
+      .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+
+    const costo = peso(ventas.reduce((total, v) =>
+      total + donde('venta_items', 'venta_id', v.id).reduce((s, it) =>
+        s + donde('consumos', 'venta_item_id', it.id).reduce((t, c) =>
+          t + kg(c.cantidad) * peso(c.costo_unit), 0), 0), 0));
+
+    return {
+      desde, hasta,
+      ventas, compras, movimientos: movs,
+      facturado: peso(ventas.reduce((s, v) => s + totalVenta(v.id), 0)),
+      costo,
+      utilidad:  utilidad(desde, hasta),
+      comprado:  peso(compras.reduce((s, c) => s + totalCompra(c.id), 0)),
+      cobrado:   sumaMov(movs, 'cobro'),
+      pagado:    sumaMov(movs, 'pago'),
+      retirado:  sumaMov(movs, 'retiro'),
+      aportado:  sumaMov(movs, 'apertura')
+    };
+  }
+
+  // Cuándo debería pagar cada pedido que todavía debe algo. Al cliente de
+  // crédito se le suma su plazo; al de contado le tocaba el mismo día.
+  function cobrosEsperados() {
+    return todos('ventas').map(v => {
+      const saldo = saldoVenta(v.id);
+      if (saldo <= 0) return null;
+
+      const cliente = uno('clientes', v.cliente_id);
+      const plazo = cliente && cliente.condicion === 'credito'
+        ? (cliente.dias_plazo || 0) : 0;
+
+      return {
+        venta_id:   v.id,
+        numero:     v.numero,
+        cliente_id: v.cliente_id,
+        fecha_venta: v.fecha,
+        plazo:      plazo,
+        fecha_pago: sumarDias(v.fecha, plazo),
+        saldo:      saldo
+      };
+    }).filter(Boolean).sort((a, b) => a.fecha_pago.localeCompare(b.fecha_pago));
+  }
+
   function resumen(desde, hasta) {
     const caja = disponible();
     const cobrar = porCobrar();
@@ -349,6 +420,7 @@
     cubierto, totalVenta, cobrado, saldoVenta, faltanteVenta, vencida, diasDesde,
     totalCompra, pagado, saldoCompra,
     disponible, porCobrar, porPagar, valorStock, utilidad, resumen,
+    periodo, cobrosEsperados, sumarDias, enRango,
     sucias, limpiar, recibir
   };
 

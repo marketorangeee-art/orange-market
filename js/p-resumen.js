@@ -22,11 +22,44 @@
   ];
 
   let periodo = 'mes';
+  let desdeManual = '';
+  let hastaManual = '';
+
+  const dos = n => String(n).padStart(2, '0');
 
   function rango() {
     const h = ui.hoy();
+    const a = Number(h.slice(0, 4));
+    const m = Number(h.slice(5, 7));
+
     if (periodo === 'hoy') return { desde: h, hasta: h, texto: 'hoy' };
-    if (periodo === 'mes') return { desde: h.slice(0, 8) + '01', hasta: h, texto: 'este mes' };
+
+    if (periodo === 'mes') {
+      return { desde: h.slice(0, 8) + '01', hasta: h, texto: 'este mes' };
+    }
+
+    if (periodo === 'anterior') {
+      const pm = m === 1 ? 12 : m - 1;
+      const pa = m === 1 ? a - 1 : a;
+      const ultimo = new Date(Date.UTC(pa, pm, 0)).getUTCDate();
+      return {
+        desde: pa + '-' + dos(pm) + '-01',
+        hasta: pa + '-' + dos(pm) + '-' + dos(ultimo),
+        texto: 'el mes pasado'
+      };
+    }
+
+    if (periodo === 'rango') {
+      return {
+        desde: desdeManual || null,
+        hasta: hastaManual || null,
+        texto: desdeManual || hastaManual
+          ? 'del ' + (desdeManual ? ui.fmt.fecha(desdeManual) : 'principio') +
+            ' al ' + (hastaManual ? ui.fmt.fecha(hastaManual) : 'hoy')
+          : 'el rango que elijas'
+      };
+    }
+
     return { desde: null, hasta: null, texto: 'desde el principio' };
   }
 
@@ -250,7 +283,8 @@
     html() {
       const r = store.resumen();
       const p = rango();
-      const utilidad = store.utilidad(p.desde, p.hasta);
+      const mov = store.periodo(p.desde, p.hasta);
+      const utilidad = mov.utilidad;
       const hayApertura = store.todos('movimientos').some(m => m.tipo === 'apertura');
 
       const boton = (id, texto) => `
@@ -304,6 +338,14 @@
           <div class="fila__valor monto">${fmt.pesos(r.porCobrar.total)}</div>
         </button>
 
+        <button class="fila" id="calendario">
+          <div class="fila__cuerpo">
+            <div class="fila__titulo">Calendario de cobros</div>
+            <div class="fila__detalle">qué día debería pagar cada uno</div>
+          </div>
+          <div class="fila__valor tenue">›</div>
+        </button>
+
         <button class="fila" id="stock">
           <div class="fila__cuerpo">
             <div class="fila__titulo">Stock de productos</div>
@@ -322,15 +364,70 @@
           </div>
         </button>
 
-        <div class="tarjeta" style="margin-top:18px">
-          <div class="tarjeta__titulo">Utilidad ${esc(p.texto)}</div>
+        <div class="tarjeta__titulo" style="margin:22px 0 8px">Lo que se movió</div>
+
+        <div class="tarjeta">
+          <div class="periodos">
+            ${boton('hoy', 'Hoy')}${boton('mes', 'Este mes')}${boton('anterior', 'Mes pasado')}
+          </div>
+          <div class="periodos" style="margin-top:6px">
+            ${boton('todo', 'Todo')}${boton('rango', 'Entre fechas')}
+          </div>
+
+          ${periodo === 'rango' ? `
+            <div class="campo--duo" style="margin-top:14px">
+              <label class="campo" style="margin-bottom:0">
+                <span class="campo__etiqueta">Desde</span>
+                <input type="date" id="desde" value="${desdeManual}">
+              </label>
+              <label class="campo" style="margin-bottom:0">
+                <span class="campo__etiqueta">Hasta</span>
+                <input type="date" id="hasta" value="${hastaManual}">
+              </label>
+            </div>` : ''}
+
+          <div class="tarjeta__titulo" style="margin:18px 0 6px">
+            Utilidad ${esc(p.texto)}
+          </div>
           <div class="monto ok" style="font-size:28px">${fmt.pesos(utilidad)}</div>
-          <div class="tenue" style="margin-bottom:12px">
+          <div class="tenue">
             Antes de gastos distintos al producto. Solo cuenta lo entregado.
           </div>
-          <div class="periodos">
-            ${boton('hoy', 'Hoy')}${boton('mes', 'Este mes')}${boton('todo', 'Todo')}
+
+          <div class="previa__pie" style="border-top:1px solid var(--linea);margin-top:14px">
+            <span class="tenue">Facturado</span>
+            <span class="monto">${fmt.pesos(mov.facturado)}</span>
           </div>
+          <div class="previa__pie">
+            <span class="tenue">Costo de lo vendido</span>
+            <span class="monto">${fmt.pesos(mov.costo)}</span>
+          </div>
+          <div class="previa__pie">
+            <span class="tenue">Comprado a proveedores</span>
+            <span class="monto">${fmt.pesos(mov.comprado)}</span>
+          </div>
+          <div class="previa__pie">
+            <span class="tenue">Cobrado</span>
+            <span class="monto ok">${fmt.pesos(mov.cobrado)}</span>
+          </div>
+          <div class="previa__pie">
+            <span class="tenue">Pagado a proveedores</span>
+            <span class="monto">${fmt.pesos(mov.pagado)}</span>
+          </div>
+          <div class="previa__pie">
+            <span class="tenue">Retirado</span>
+            <span class="monto ${mov.retirado > 0 ? 'mal' : ''}">${fmt.pesos(mov.retirado)}</span>
+          </div>
+
+          <div class="tenue" style="font-size:13px;margin-top:12px">
+            ${mov.ventas.length} venta${mov.ventas.length === 1 ? '' : 's'} y
+            ${mov.compras.length} compra${mov.compras.length === 1 ? '' : 's'} en el período.
+          </div>
+
+          <button class="boton boton--bloque" id="descargar" style="margin-top:14px"
+                  ${mov.ventas.length || mov.compras.length || mov.movimientos.length ? '' : 'disabled'}>
+            Descargar informe del período
+          </button>
         </div>
 
         <button class="boton boton--bloque" id="capital" style="margin-top:16px">
@@ -347,9 +444,32 @@
       const inicial = cont.querySelector('#inicial');
       if (inicial) inicial.onclick = ingresarCapital;
 
+      cont.querySelector('#calendario').onclick = () => ui.abrir(OM.cartera.calendario());
+
       cont.querySelectorAll('[data-periodo]').forEach(b => {
         b.onclick = () => { periodo = b.dataset.periodo; ui.render(); };
       });
+
+      const desde = cont.querySelector('#desde');
+      const hasta = cont.querySelector('#hasta');
+      if (desde) desde.onchange = e => { desdeManual = e.target.value; ui.render(); };
+      if (hasta) hasta.onchange = e => { hastaManual = e.target.value; ui.render(); };
+
+      const bajar = cont.querySelector('#descargar');
+      bajar.onclick = async () => {
+        const original = bajar.textContent;
+        bajar.disabled = true;
+        bajar.textContent = 'Armando el informe…';
+        try {
+          const r = rango();
+          const salida = await OM.exportar.descargar(r.desde, r.hasta);
+          if (salida === 'descargado') ui.aviso('Informe descargado');
+        } catch (e) {
+          ui.aviso('No se pudo armar el informe');
+        }
+        bajar.disabled = false;
+        bajar.textContent = original;
+      };
     }
   });
 

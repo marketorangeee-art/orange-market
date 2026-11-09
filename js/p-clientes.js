@@ -305,7 +305,15 @@
             : '<div class="tenue">nada vencido</div>'}
         </div>
 
-        <button class="boton boton--bloque" id="nuevo" style="margin-bottom:16px">
+        <button class="fila" id="calendario">
+          <div class="fila__cuerpo">
+            <div class="fila__titulo">Calendario de cobros</div>
+            <div class="fila__detalle">qué día debería pagar cada uno</div>
+          </div>
+          <div class="fila__valor tenue">›</div>
+        </button>
+
+        <button class="boton boton--bloque" id="nuevo" style="margin:12px 0 16px">
           + Cliente nuevo
         </button>
 
@@ -313,6 +321,7 @@
     },
     listo(cont) {
       cont.querySelector('#nuevo').onclick = () => crear();
+      cont.querySelector('#calendario').onclick = () => ui.abrir(OM.cartera.calendario());
       cont.querySelectorAll('[data-ver]').forEach(b => {
         b.onclick = () => ui.abrir(detalle(store.uno('clientes', b.dataset.ver)));
       });
